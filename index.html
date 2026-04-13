@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ordr.trade — ordr from chaos</title>
+
+  <!-- Fonts: Geist Mono for that raw systems feel + Instrument Serif for contrast -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* ===========================================
+           CSS CUSTOM PROPERTIES (THEME)
+           Dark, grainy, monochrome — inspired by brand imagery
+           =========================================== */
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #161616;
+      --text-primary: #e8e8e8;
+      --text-secondary: #888888;
+      --text-dim: #555555;
+      --accent: #c0c0c0;
+      --accent-bright: #ffffff;
+
+      --font-display: 'Space Mono', monospace;
+      --font-body: 'Space Mono', monospace;
+      --font-mono: 'Space Mono', monospace;
+
+      --title-size: clamp(2.5rem, 7vw, 6rem);
+      --subtitle-size: clamp(1rem, 2.5vw, 1.75rem);
+      --body-size: clamp(0.85rem, 1.5vw, 1.15rem);
+      --h2-size: clamp(1.5rem, 4.5vw, 3rem);
+      --h3-size: clamp(1.2rem, 3vw, 2rem);
+      --small-size: clamp(0.75rem, 1.2vw, 1rem);
+
+      --slide-padding: clamp(1.5rem, 4vw, 4rem);
+      --content-gap: clamp(1rem, 2vw, 2rem);
+      --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-normal: 0.6s;
+    }
+
+    /* ===========================================
+           BASE STYLES
+           =========================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* ===========================================
+           VIEWPORT FITTING: MANDATORY BASE STYLES
+           =========================================== */
+    html,
+    body {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    html {
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-height: 100%;
+      overflow: hidden;
+      padding: var(--slide-padding);
+    }
+
+    img,
+    .image-container {
+      max-width: 100%;
+      max-height: min(50vh, 400px);
+      object-fit: contain;
+    }
+
+    /* Responsive breakpoints */
+    @media (max-height: 700px) {
+      :root {
+        --slide-padding: clamp(0.75rem, 3vw, 2rem);
+        --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+        --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+        --h2-size: clamp(1rem, 3vw, 1.75rem);
+      }
+    }
+
+    @media (max-height: 600px) {
+      :root {
+        --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+        --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+        --title-size: clamp(1.1rem, 4vw, 2rem);
+        --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+      }
+
+      .nav-dots,
+      .keyboard-hint,
+      .decorative {
+        display: none;
+      }
+    }
+
+    @media (max-height: 500px) {
+      :root {
+        --slide-padding: clamp(0.4rem, 2vw, 1rem);
+        --title-size: clamp(1rem, 3.5vw, 1.5rem);
+        --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+        --body-size: clamp(0.65rem, 1vw, 0.85rem);
+      }
+    }
+
+    @media (max-width: 600px) {
+      :root {
+        --title-size: clamp(1.25rem, 7vw, 2.5rem);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+      }
+
+      html {
+        scroll-behavior: auto;
+      }
+    }
+
+    /* ===========================================
+           GLOBAL STYLES
+           =========================================== */
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+    }
+
+    /* Noise grain overlay on every slide */
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.04;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    .slide>* {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ===========================================
+           ANIMATIONS
+           =========================================== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity var(--duration-normal) var(--ease-out-expo),
+        transform var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .slide.visible .reveal {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal:nth-child(1) {
+      transition-delay: 0.1s;
+    }
+
+    .reveal:nth-child(2) {
+      transition-delay: 0.25s;
+    }
+
+    .reveal:nth-child(3) {
+      transition-delay: 0.4s;
+    }
+
+    .reveal:nth-child(4) {
+      transition-delay: 0.55s;
+    }
+
+    .reveal-blur {
+      opacity: 0;
+      filter: blur(12px);
+      transition: opacity 1s var(--ease-out-expo), filter 1s var(--ease-out-expo);
+    }
+
+    .slide.visible .reveal-blur {
+      opacity: 1;
+      filter: blur(0);
+    }
+
+    /* ===========================================
+           PROGRESS BAR
+           =========================================== */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: var(--text-dim);
+      z-index: 1000;
+      transition: width 0.3s ease;
+    }
+
+    /* ===========================================
+           NAV DOTS
+           =========================================== */
+    .nav-dots {
+      position: fixed;
+      right: clamp(12px, 2vw, 24px);
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .nav-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
+
+    .nav-dot.active {
+      background: var(--text-primary);
+      transform: scale(1.4);
+    }
+
+    /* ===========================================
+           SLIDE 1 — TITLE
+           =========================================== */
+    .title-slide {
+      background: var(--bg-primary);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title-slide .slide-content {
+      align-items: center;
+      text-align: center;
+      gap: clamp(0.5rem, 1.5vh, 1.5rem);
+    }
+
+    .title-brand {
+      font-family: var(--font-display);
+      font-size: clamp(3.5rem, 12vw, 9rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--accent-bright);
+      line-height: 1;
+    }
+
+    .title-tagline {
+      font-family: var(--font-mono);
+      font-size: clamp(0.7rem, 1.5vw, 1rem);
+      color: var(--text-dim);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    /* Soft radial glow behind title */
+    .title-slide .slide-content::before {
+      content: '';
+      position: absolute;
+      width: 60vw;
+      height: 60vh;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===========================================
+           SLIDE 2 — VENN DIAGRAM
+           3 circles arranged in a triangle,
+           labels inside each circle's outer region,
+           "ordr.trade" at the center intersection
+           =========================================== */
+    .venn-slide {
+      background: var(--bg-primary);
+    }
+
+    .venn-slide .slide-content {
+      align-items: center;
+      justify-content: center;
+    }
+
+    .venn-container {
+      position: relative;
+      width: min(65vh, 65vw, 480px);
+      height: min(65vh, 65vw, 480px);
+    }
+
+    .venn-circle {
+      position: absolute;
+      width: 62%;
+      height: 62%;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.02);
+      transition: border-color 0.4s ease;
+    }
+
+    .venn-circle:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Top circle — centered horizontally, top-aligned */
+    .venn-circle:nth-child(1) {
+      top: 0;
+      left: 19%;
+    }
+
+    /* Bottom-left circle */
+    .venn-circle:nth-child(2) {
+      bottom: 2%;
+      left: 0;
+    }
+
+    /* Bottom-right circle */
+    .venn-circle:nth-child(3) {
+      bottom: 2%;
+      right: 0;
+    }
+
+    /* Labels inside each circle, pushed to outer edge away from center */
+    .venn-label {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: clamp(0.55rem, 1.1vw, 0.85rem);
+      color: var(--text-secondary);
+      text-align: center;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      line-height: 1.4;
+      z-index: 3;
+    }
+
+    /* Top circle label — near top of circle */
+    .venn-label-top {
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Bottom-left label — near bottom-left of circle */
+    .venn-label-bl {
+      bottom: 18%;
+      left: 12%;
+    }
+
+    /* Bottom-right label — near bottom-right of circle */
+    .venn-label-br {
+      bottom: 18%;
+      right: 12%;
+    }
+
+    /* "ordr.trade" at the intersection center */
+    .venn-center {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 5;
+    }
+
+    .venn-center-text {
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 2.5vw, 1.8rem);
+      color: var(--accent-bright);
+      font-weight: 700;
+    }
+
+    /* ===========================================
+           SLIDE 3, 4, 6 — VIDEO SLIDES
+           =========================================== */
+    .video-slide {
+      background: var(--bg-primary);
+    }
+
+    .video-slide .slide-content {
+      align-items: center;
+      text-align: center;
+      gap: clamp(0.5rem, 1.5vh, 1.5rem);
+    }
+
+    .video-slide h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2-size);
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    .video-slide .video-desc {
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .video-slide video {
+      max-width: min(92vw, 1200px);
+      max-height: min(75vh, 700px);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ===========================================
+           SLIDE 5 — IMAGE SLIDE (ASM)
+           =========================================== */
+    .image-slide {
+      background: var(--bg-primary);
+    }
+
+    .image-slide .slide-content {
+      align-items: center;
+      text-align: center;
+      gap: clamp(0.5rem, 1.5vh, 1.5rem);
+    }
+
+    .image-slide h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2-size);
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    .image-slide .image-desc {
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      max-width: 100%;
+    }
+
+    .image-slide img {
+      max-width: min(92vw, 1200px);
+      max-height: min(75vh, 700px);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ===========================================
+           SLIDE 7 — CLOSING ANIMATION
+           Two phases: "ordr from chaos" fades out,
+           then "ordr.trade" "from" "chaos" "labs" fade in word by word
+           =========================================== */
+    .closing-slide {
+      background: var(--bg-primary);
+    }
+
+    .closing-slide .slide-content {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .closing-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: clamp(4rem, 15vh, 10rem);
+    }
+
+    /* Phase 1: "ordr from chaos" — same size as phase 2 */
+    .closing-phase1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 3.5vw, 3rem);
+      font-weight: 700;
+      color: var(--text-primary);
+      opacity: 0;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      position: absolute;
+    }
+
+    /* Phase 2: word-by-word reveal */
+    .closing-phase2 {
+      display: flex;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      align-items: baseline;
+      justify-content: center;
+      gap: clamp(0.4rem, 1vw, 0.8rem);
+      opacity: 0;
+      position: absolute;
+    }
+
+    .closing-word {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 3.5vw, 3rem);
+      font-weight: 700;
+      color: var(--accent-bright);
+      opacity: 0;
+      transform: translateY(15px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .closing-word.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .closing-word.dim {
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- Navigation dots -->
+  <nav class="nav-dots" id="navDots"></nav>
+
+  <!-- ===========================================
+         SLIDE 1 — TITLE: ordr.trade
+         =========================================== -->
+  <section class="slide title-slide" id="slide-0">
+    <div class="slide-content">
+      <h1 class="title-brand reveal-blur">ordr.trade</h1>
+    </div>
+  </section>
+
+  <!-- ===========================================
+         SLIDE 2 — VENN DIAGRAM: The Problem Space
+         =========================================== -->
+  <section class="slide venn-slide" id="slide-1">
+    <div class="slide-content">
+      <div class="venn-container reveal">
+        <div class="venn-circle">
+          <span class="venn-label venn-label-top">MEV<br>Resistance</span>
+        </div>
+        <div class="venn-circle">
+          <span class="venn-label venn-label-bl">Expensive<br>Repricing</span>
+        </div>
+        <div class="venn-circle">
+          <span class="venn-label venn-label-br">Liquidity<br>Segregation</span>
+        </div>
+        <div class="venn-center">
+          <span class="venn-center-text">ordr.trade</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===========================================
+         SLIDE 3 — MM Bot: Feed Simulation
+         =========================================== -->
+  <section class="slide video-slide" id="slide-2">
+    <div class="slide-content">
+      <h2 class="reveal">MM Bot Done</h2>
+      <video class="reveal" src="mm-feed.mp4" autoplay loop muted playsinline></video>
+      <p class="video-desc reveal">Feed Simulation</p>
+    </div>
+  </section>
+
+  <!-- ===========================================
+         SLIDE 4 — Market Maker CLI Demo
+         =========================================== -->
+  <section class="slide video-slide" id="slide-3">
+    <div class="slide-content">
+      <h2 class="reveal">Market Maker CLI Demo</h2>
+      <video class="reveal" src="mm-demo.mp4" autoplay loop muted playsinline></video>
+    </div>
+  </section>
+
+  <!-- ===========================================
+         SLIDE 5 — Assembly Optimization
+         =========================================== -->
+  <section class="slide image-slide" id="slide-4">
+    <div class="slide-content">
+      <h2 class="reveal">Assembly Experiments</h2>
+      <img class="reveal" src="ordr-asm.png" alt="Assembly code in the ordr program" />
+      <p class="image-desc reveal" style="white-space:nowrap;">For optimization we are experimenting with assembly on
+        the ordr program</p>
+    </div>
+  </section>
+
+  <!-- ===========================================
+         SLIDE 6 — Frontend Demo
+         =========================================== -->
+  <section class="slide video-slide" id="slide-5">
+    <div class="slide-content">
+      <h2 class="reveal">Frontend Demo</h2>
+      <video class="reveal" src="frontend.mp4" autoplay loop muted playsinline></video>
+    </div>
+  </section>
+
+  <!-- ===========================================
+         SLIDE 7 — CLOSING: ordr from chaos -> ordr.trade
+         =========================================== -->
+  <section class="slide closing-slide" id="slide-6">
+    <div class="slide-content">
+      <div class="closing-container">
+        <!-- Phase 1: fades in then out -->
+        <span class="closing-phase1">ordr from chaos</span>
+        <!-- Phase 2: word by word fade in -->
+        <div class="closing-phase2">
+          <span class="closing-word">ordr.trade</span>
+          <span class="closing-word dim">from</span>
+          <span class="closing-word">chaos</span>
+          <span class="closing-word">labs</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* ===========================================
+       SLIDE PRESENTATION CONTROLLER
+       =========================================== */
+    class SlidePresentation {
+      constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.currentSlide = 0;
+        this.isScrolling = false;
+        this.navDotsContainer = document.getElementById('navDots');
+        this.progressBar = document.getElementById('progressBar');
+
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupWheelNav();
+        this.setupProgressBar();
+        this.setupNavDots();
+      }
+
+      setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              const idx = Array.from(this.slides).indexOf(entry.target);
+              this.currentSlide = idx;
+              this.updateNavDots();
+              this.updateProgressBar();
+            }
+          });
+        }, {threshold: 0.5});
+
+        this.slides.forEach(slide => observer.observe(slide));
+      }
+
+      setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+            e.preventDefault();
+            this.goToSlide(this.currentSlide + 1);
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            e.preventDefault();
+            this.goToSlide(this.currentSlide - 1);
+          }
+        });
+      }
+
+      setupTouchNav() {
+        let startY = 0;
+        document.addEventListener('touchstart', (e) => {startY = e.touches[0].clientY;});
+        document.addEventListener('touchend', (e) => {
+          const diff = startY - e.changedTouches[0].clientY;
+          if (Math.abs(diff) > 50) {
+            this.goToSlide(this.currentSlide + (diff > 0 ? 1 : -1));
+          }
+        });
+      }
+
+      setupWheelNav() {
+        let lastWheel = 0;
+        document.addEventListener('wheel', (e) => {
+          const now = Date.now();
+          if (now - lastWheel < 800) return;
+          lastWheel = now;
+          if (e.deltaY > 0) {
+            this.goToSlide(this.currentSlide + 1);
+          } else if (e.deltaY < 0) {
+            this.goToSlide(this.currentSlide - 1);
+          }
+        }, {passive: true});
+      }
+
+      goToSlide(idx) {
+        if (idx < 0 || idx >= this.slides.length) return;
+        this.currentSlide = idx;
+        this.slides[idx].scrollIntoView({behavior: 'smooth'});
+        this.updateNavDots();
+        this.updateProgressBar();
+      }
+
+      setupProgressBar() {
+        this.updateProgressBar();
+      }
+
+      updateProgressBar() {
+        const progress = ((this.currentSlide + 1) / this.slides.length) * 100;
+        this.progressBar.style.width = progress + '%';
+      }
+
+      setupNavDots() {
+        this.navDotsContainer.innerHTML = '';
+        this.slides.forEach((_, i) => {
+          const dot = document.createElement('button');
+          dot.classList.add('nav-dot');
+          if (i === 0) dot.classList.add('active');
+          dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+          dot.addEventListener('click', () => this.goToSlide(i));
+          this.navDotsContainer.appendChild(dot);
+        });
+      }
+
+      updateNavDots() {
+        const dots = this.navDotsContainer.querySelectorAll('.nav-dot');
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === this.currentSlide);
+        });
+      }
+    }
+
+    /* ===========================================
+       CLOSING SLIDE ANIMATION CONTROLLER
+       Phase 1: "ordr from chaos" fades in, holds, fades out
+       Phase 2: "ordr.trade from chaos labs" word-by-word fade in
+       =========================================== */
+    class ClosingAnimation {
+      constructor(slide) {
+        this.slide = slide;
+        this.phase1 = slide.querySelector('.closing-phase1');
+        this.phase2 = slide.querySelector('.closing-phase2');
+        this.words = slide.querySelectorAll('.closing-word');
+        this.hasPlayed = false;
+      }
+
+      play() {
+        if (this.hasPlayed) return;
+        this.hasPlayed = true;
+
+        /* Phase 1: fade in "ordr from chaos" */
+        this.phase1.style.transition = 'opacity 0.8s ease';
+        this.phase1.style.opacity = '1';
+
+        /* After 2s, fade it out */
+        setTimeout(() => {
+          this.phase1.style.opacity = '0';
+        }, 2000);
+
+        /* Phase 2: after phase1 is gone, show container and reveal words one by one */
+        setTimeout(() => {
+          this.phase2.style.opacity = '1';
+          this.words.forEach((word, i) => {
+            setTimeout(() => {
+              word.classList.add('visible');
+            }, i * 350);
+          });
+        }, 3000);
+      }
+    }
+
+    /* Initialize on load */
+    document.addEventListener('DOMContentLoaded', () => {
+      const pres = new SlidePresentation();
+      const closingSlide = document.getElementById('slide-6');
+      const closingAnim = new ClosingAnimation(closingSlide);
+
+      /* Watch for closing slide becoming visible */
+      const closingObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            closingAnim.play();
+          }
+        });
+      }, {threshold: 0.5});
+      closingObserver.observe(closingSlide);
+    });
+  </script>
+</body>
+
+</html>
